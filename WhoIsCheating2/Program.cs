@@ -55,7 +55,7 @@ namespace WhoIsCheating2
         {
             if (_isDrawing && _heroList != null)
             {
-                Drawing.DrawText(posX, posY, _isDetecting ? System.Drawing.Color.LawnGreen : System.Drawing.Color.Red, "Press Delete to toggle detection.");
+                Drawing.DrawText(posX, posY, _isDetecting ? System.Drawing.Color.LawnGreen : System.Drawing.Color.Red, "Press Delete to toggle detection. Current threshold: {0}", threshold);
                 Drawing.DrawText(posX, posY + 20.0f, System.Drawing.Color.AntiqueWhite, "Press End to toggle this drawing.");
                 for (int i = 0; i < _heroList.Count; i++)
                 {
