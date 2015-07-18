@@ -83,7 +83,8 @@ namespace WhoIsCheating2
                         break;
 
                     case keyMinus:
-                        threshold -= 1;
+                        if (threshold > 0)
+                            threshold -= 1;
                         break;
 
                     case keyLArrow:
