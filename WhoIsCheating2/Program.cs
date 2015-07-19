@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using LeagueSharp;
 
 namespace WhoIsCheating2
@@ -22,44 +23,60 @@ namespace WhoIsCheating2
     internal class Program
     {
         private static bool _lookUp;
+        private static bool _isBlocked = true;
         private static bool _isDetecting;
         private static bool _isDrawing = true;
-        private static int _lastTick;
+        private static bool _isDrawingCounts;
         private static List<Hero> _heroList;
         private static TimeSpan _ts;
         private static DateTime _start;
-        private static int threshold = 10;
+        private static int _threshold = 10;
 
-        private static float posX = 20.0f;
-        private static float posY = 20.0f;
-        private static float posChange = 2.5f;
+        private static float _posX = 20.0f;
+        private static float _posY = 20.0f;
+        private static float _posChange = 2.5f;
 
-        private const uint keyEnd = 0x23;
-        private const uint keyLArrow = 0x25;
-        private const uint keyUArrow = 0x26;
-        private const uint keyRArrow = 0x27;
-        private const uint keyDArrow = 0x28;
-        private const uint keyDelete = 0x2E;
-        private const uint keyPlus = 0x6B;
-        private const uint keyMinus = 0x6D;
+        private const uint KeyEnd = 0x23;
+        private const uint KeyLArrow = 0x25;
+        private const uint KeyUArrow = 0x26;
+        private const uint KeyRArrow = 0x27;
+        private const uint KeyDArrow = 0x28;
+        private const uint KeyInsert = 0x2D;
+        private const uint KeyDelete = 0x2E;
+        private const uint KeyPlus = 0x6B;
+        private const uint KeyMinus = 0x6D;
 
-        private static void Main(string[] args)
+        private static void Main()
         {
+            LeagueSharp.Common.CustomEvents.Game.OnGameLoad += Game_OnGameLoad;
             Obj_AI_Base.OnNewPath += Obj_AI_Hero_OnNewPath;
             Game.OnUpdate += Game_OnUpdate;
             Game.OnWndProc += Game_OnWndProc;
             Drawing.OnDraw += Drawing_OnDraw;
         }
 
+        static void Game_OnGameLoad(EventArgs args)
+        {
+            _isBlocked = false;
+            _isDetecting = true;
+        }
+
         static void Drawing_OnDraw(EventArgs args)
         {
-            if (_isDrawing && _heroList != null)
+            if (_isDrawing)
             {
-                Drawing.DrawText(posX, posY, _isDetecting ? System.Drawing.Color.LawnGreen : System.Drawing.Color.Red, "Press Delete to toggle detection. Current threshold: {0}", threshold);
-                Drawing.DrawText(posX, posY + 20.0f, System.Drawing.Color.AntiqueWhite, "Press End to toggle this drawing.");
-                for (int i = 0; i < _heroList.Count; i++)
+                Drawing.DrawText(_posX, _posY, _isDetecting ? Color.LawnGreen : Color.Red, "Press Delete to toggle detection. Current threshold: {0}", _threshold);
+                Drawing.DrawText(_posX, _posY + 20.0f, Color.AntiqueWhite, "Press End to toggle this drawing.");
+                if (_heroList != null)
                 {
-                    Drawing.DrawText(posX, (posY + 40.0f) + (i * 20.0f), System.Drawing.Color.AntiqueWhite, "{0} - {1}", _heroList[i].Nickname, _heroList[i].Detections);
+                    for (int i = 0; i < _heroList.Count; i++)
+                    {
+                        Drawing.DrawText(_posX, (_posY + 40.0f) + (i * 20.0f), (_heroList[i].Detections > 20) ? Color.Red : (_heroList[i].Detections > 5) ? Color.Yellow : Color.AntiqueWhite, "{0} - {1}{2}", _heroList[i].Nickname, _heroList[i].Detections, _isDrawingCounts ? String.Format(" - {0}", _heroList[i].Count) : "");
+                    }
+                }
+                else
+                {
+                    Drawing.DrawText(_posX, _posY + 40.0f, Color.Aqua, "Please wait for the game to load.");
                 }
             }
         }
@@ -70,36 +87,41 @@ namespace WhoIsCheating2
             {
                 switch (args.WParam)
                 {
-                    case keyDelete:
-                        _isDetecting = !_isDetecting;
+                    case KeyDelete:
+                        if (!_isBlocked)
+                            _isDetecting = !_isDetecting;
                         break;
 
-                    case keyEnd:
+                    case KeyEnd:
                         _isDrawing = !_isDrawing;
                         break;
 
-                    case keyPlus:
-                        threshold += 1;
+                    case KeyInsert:
+                        _isDrawingCounts = !_isDrawingCounts;
                         break;
 
-                    case keyMinus:
-                        if (threshold > 0)
-                            threshold -= 1;
+                    case KeyPlus:
+                        _threshold += 1;
                         break;
 
-                    case keyLArrow:
+                    case KeyMinus:
+                        if (_threshold > 1)
+                            _threshold -= 1;
+                        break;
+
+                    case KeyLArrow:
                         MoveDrawing(Direction.Left);
                         break;
 
-                    case keyUArrow:
+                    case KeyUArrow:
                         MoveDrawing(Direction.Up);
                         break;
 
-                    case keyRArrow:
+                    case KeyRArrow:
                         MoveDrawing(Direction.Right);
                         break;
 
-                    case keyDArrow:
+                    case KeyDArrow:
                         MoveDrawing(Direction.Down);
                         break;
                 }
@@ -111,23 +133,23 @@ namespace WhoIsCheating2
             switch (direction)
             {
                 case Direction.Up:
-                    if (posY >= posChange)
-                        posY -= posChange;
+                    if (_posY >= _posChange)
+                        _posY -= _posChange;
                     break;
 
                 case Direction.Left:
-                    if (posX >= posChange)
-                        posX -= posChange;
+                    if (_posX >= _posChange)
+                        _posX -= _posChange;
                     break;
 
                 case Direction.Down:
-                    if (posY <= Drawing.Height)
-                        posY += posChange;
+                    if (_posY <= Drawing.Height)
+                        _posY += _posChange;
                     break;
 
                 case Direction.Right:
-                    if (posX <= Drawing.Height)
-                        posX += posChange;
+                    if (_posX <= Drawing.Height)
+                        _posX += _posChange;
                     break;
             }
         }
@@ -139,42 +161,22 @@ namespace WhoIsCheating2
 
         private static void Check()
         {
-            if (Environment.TickCount <= _lastTick + 200)
-            {
-                return;
-            }
-
             if (!_lookUp)
             {
                 _heroList = new List<Hero>();
-                using (var enumerator = ObjectManager.Get<Obj_AI_Hero>().GetEnumerator())
-                {
-                    while (enumerator.MoveNext())
-                    {
-                        var current = enumerator.Current;
-                        if (current == null || !current.IsValid)
-                        {
-                            continue;
-                        }
+                foreach (Obj_AI_Hero hero in ObjectManager.Get<Obj_AI_Hero>())
+                    _heroList.Add(new Hero { NetworkId = hero.NetworkId, Count = 0, Detections = 0, Nickname = hero.Name });
 
-                        _heroList.Add(new Hero {NetworkId = current.NetworkId, Count = 0, Detections = 0, Nickname = current.Name});
-                    }
-                }
                 _lookUp = true;
             }
 
             if (!_isDetecting)
-            {
                 return;
-            }
 
             _ts = DateTime.Now - _start;
-            if (_ts.TotalMilliseconds > 1000.0)
-            {
-                WhoIsCheatingHuehue();
-            }
 
-            _lastTick = Environment.TickCount;
+            if (_ts.TotalMilliseconds > 1000.0)
+                WhoIsCheatingHuehue();
         }
 
         private static void WhoIsCheatingHuehue()
@@ -189,7 +191,7 @@ namespace WhoIsCheating2
                         continue;
                     }
 
-                    if (_heroList.Find(y => y.NetworkId == hero.NetworkId).Count >= threshold)
+                    if (_heroList.Find(y => y.NetworkId == hero.NetworkId).Count >= _threshold)
                     {
                         ++_heroList.Find(y => y.NetworkId == hero.NetworkId).Detections;
                     }
