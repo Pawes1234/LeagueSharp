@@ -148,7 +148,7 @@ namespace WhoIsCheating2
                     break;
 
                 case Direction.Right:
-                    if (_posX <= Drawing.Height)
+                    if (_posX <= Drawing.Width)
                         _posX += _posChange;
                     break;
             }
